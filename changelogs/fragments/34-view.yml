@@ -1,0 +1,3 @@
+deprecated_features:
+  - b1_dns_view - is deprecated in favor of `dns_view`.
+  - b1_dns_view_gather - is deprecated in favor of `dns_view_info`.

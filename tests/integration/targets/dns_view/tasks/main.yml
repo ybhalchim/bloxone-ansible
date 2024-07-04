@@ -1,0 +1,971 @@
+---
+- module_defaults:
+    group/infoblox.bloxone.all:
+      csp_url: "{{ csp_url }}"
+      api_key: "{{ api_key }}"
+  block:
+    # Create a random View name to avoid conflicts
+    - ansible.builtin.set_fact:
+        name: "test-view-{{ 999999 | random | string }}"
+
+
+    - name: Create a View (check mode)
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        state: present
+      check_mode: true
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view is changed
+          - view_info is not failed
+          - view_info.objects | length == 0
+
+    - name: Create a View
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].name == view.object.name
+
+    - name: Create a View (idempotent)
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        state: present
+      register: view
+    - assert:
+        that:
+          - view is not changed
+          - view is not failed
+
+    - name: Delete the View (check mode)
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        state: absent
+      check_mode: true
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view is changed
+          - view_info is not failed
+          - view_info.objects | length == 1
+
+    - name: Delete the View
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        state: absent
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view is changed
+          - view_info is not failed
+          - view_info.objects | length == 0
+
+    - name: Delete a View (idempotent)
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        state: absent
+      register: view
+    - assert:
+        that:
+          - view is not changed
+          - view is not failed
+
+    - name: Create a View with tags
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        tags:
+          location: "site-1"
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].tags.location == "site-1"
+
+    - name: Create a View with a comment
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        comment: "Test Comment"
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].comment == "Test Comment"
+
+    - name: Create a View with Edns Option In Outgoing Query Enabled
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        add_edns_option_in_outgoing_query: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].add_edns_option_in_outgoing_query == true
+
+    - name: Create a View with a Custom Root NS
+
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        custom_root_ns:
+          - address: "192.168.10.10"
+            fqdn: "as-example.com."
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].custom_root_ns[0].address == "192.168.10.10"
+          - view_info.objects[0].custom_root_ns[0].fqdn == "as-example.com."
+
+
+    - name: Create a View with Custom Root NS Enabled
+
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        custom_root_ns_enabled: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].custom_root_ns_enabled == true
+
+
+    - name: Create a View with Disabled
+
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        disabled: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].disabled == true
+
+    - name: Create a View with DNS Sec Enabled Validation
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        dnssec_enable_validation: false
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].dnssec_enable_validation == false
+
+    - name: Create a View with DNS Sec Trust Anchors
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        dnssec_trust_anchors:
+          - algorithm: 8
+            public_key: "AwEAAaz/tAm8yTn4Mfeh5eyI96WSVexTBAvkMgJzkKTOiW1vkIbzxeF3+/4RgWOq7HrxRixHlFlExOLAJr5emLvN7SWXgnLh4+B5xQlNVz8Og8kvArMtNROxVQuCaSnIDdD5LKyWbRd2n9WGe2R8PzgCmr3EgVLrjyBxWezF0jLHwVN8efS3rCj/EWgvIWgb9tarpVUDK/b58Da+sqqls3eNbuv7pr+eoZG+SrDK6nWeL3c6H5Apxz7LjVc1uTIdsIXxuOLYA4/ilBmSVIzuDWfdRUfhHdY6+cn8HFRm+2hM8AnXGXws9555KrUB5qihylGa8subX2Nn6UwNR1AkUTV74bU="
+            zone: "tf-infoblox.com."
+            sep: false
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].dnssec_trust_anchors[0].algorithm == 8
+          - view_info.objects[0].dnssec_trust_anchors[0].zone == "tf-infoblox.com."
+          - view_info.objects[0].dnssec_trust_anchors[0].sep == false
+
+      # Set false to test against default behaviour of the API
+    - name: Create a View with DNS Sec Keys Expiry Validation
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        dnssec_validate_expiry: false
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].dnssec_validate_expiry == false
+
+    - name: Create a View with Default TTL
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        dtc_config:
+          default_ttl: 400
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].dtc_config.default_ttl == 400
+
+    - name: Create a View with ECS Enabled and ECS Zones
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        ecs_enabled: true
+        ecs_zones:
+          - access: "allow"
+            fqdn: "as-infoblox.com."
+          - access: "deny"
+            fqdn: "as-example.com."
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].ecs_enabled == true
+          - view_info.objects[0].ecs_zones[0].access == "allow"
+          - view_info.objects[0].ecs_zones[0].fqdn == "as-infoblox.com."
+          - view_info.objects[0].ecs_zones[1].access == "deny"
+          - view_info.objects[0].ecs_zones[1].fqdn == "as-example.com."
+          - view_info.objects[0].ecs_zones | length == 2
+
+    - name: Create a View with Ecs Forwarding
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        ecs_forwarding: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].ecs_enabled == true
+
+    - name: Create a View with Ecs Prefix v4
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        ecs_prefix_v4: 1
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].ecs_prefix_v4 == 1
+
+    - name: Create a View with Ecs Prefix v6
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        ecs_prefix_v6: 1
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].ecs_prefix_v6 == 1
+
+    - name: Create a View with Edns UDP Size
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        edns_udp_size: 4096
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].edns_udp_size == 4096
+
+    - name: Create a View with Filter Aaaa On V4 (yes)
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        filter_aaaa_on_v4: "yes"
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].filter_aaaa_on_v4 == "yes"
+
+    - name: Create a View with Filter Aaaa On V4 (break_dnssec)
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        filter_aaaa_on_v4: "break_dnssec"
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].filter_aaaa_on_v4 == "break_dnssec"
+
+    - name: Create a View with Forwarders
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        forwarders:
+            - address: "192.168.10.10"
+              fqdn: "as-example.com."
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].forwarders[0].address == "192.168.10.10"
+          - view_info.objects[0].forwarders[0].fqdn == "as-example.com."
+
+    - name: Create a View with Forwarders Only Enabled
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        forwarders_only: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].forwarders_only == true
+
+    - name: Create a View with GSS Tsig Enabled
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        gss_tsig_enabled: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].gss_tsig_enabled == true
+
+    - name: "Create an View space with Inheritance Sources"
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        inheritance_sources:
+          # The API currently requires all fields inside the inheritance config to be explicitly provided,
+          # or it fails with error 'The value of an inheritance action field is not valid'.
+          add_edns_option_in_outgoing_query:
+            action: inherit
+          custom_root_ns_block:
+            action: inherit
+          ecs_block:
+            action: inherit
+          edns_udp_size:
+            action: inherit
+          dnssec_validation_block:
+            action: inherit
+          filter_aaaa_on_v4:
+            action: inherit
+          gss_tsig_enabled:
+            action: inherit
+          lame_ttl:
+            action: inherit
+          match_recursive_only:
+            action: inherit
+          max_cache_ttl:
+            action: inherit
+          max_negative_ttl:
+            action: inherit
+          minimal_responses:
+            action: inherit
+          notify:
+            action: inherit
+          recursion_enabled:
+            action: inherit
+          sort_list:
+            action: inherit
+          synthesize_address_records_from_https:
+            action: inherit
+          transfer_acl:
+            action: inherit
+          use_forwarders_for_subzones:
+            action: inherit
+          zone_authority:
+            default_ttl:
+              action: inherit
+            expire:
+              action: inherit
+            mname_block:
+              action: inherit
+            negative_ttl:
+              action: inherit
+            refresh:
+              action: inherit
+            retry:
+              action: inherit
+            rname:
+              action: inherit
+    - name: Get information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view is not failed
+          - view_info.objects | length == 1
+
+    - name: Create a View with Lame TTL
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        lame_ttl: 3600
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].lame_ttl == 3600
+
+    - name: Create a View with Match Clients ACL
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        match_clients_acl:
+          - access: "allow"
+            element: "ip"
+            address: "192.168.11.11"
+          - access: "deny"
+            element: "any"
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].match_clients_acl[0].access == "allow"
+          - view_info.objects[0].match_clients_acl[0].element == "ip"
+          - view_info.objects[0].match_clients_acl[0].address == "192.168.11.11"
+          - view_info.objects[0].match_clients_acl[1].access == "deny"
+          - view_info.objects[0].match_clients_acl[1].element == "any"
+          - view_info.objects[0].match_clients_acl | length == 2
+
+    - name: Create a View with Match Destinations ACL
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        match_destinations_acl:
+          - access: "allow"
+            element: "ip"
+            address: "192.168.11.11"
+          - access: "deny"
+            element: "any"
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].match_destinations_acl[0].access == "allow"
+          - view_info.objects[0].match_destinations_acl[0].element == "ip"
+          - view_info.objects[0].match_destinations_acl[0].address == "192.168.11.11"
+          - view_info.objects[0].match_destinations_acl[1].access == "deny"
+          - view_info.objects[0].match_destinations_acl[1].element == "any"
+          - view_info.objects[0].match_destinations_acl | length == 2
+
+    - name: Create a View with Max Cache TTL
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        max_cache_ttl: 1
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].max_cache_ttl == 1
+
+    - name: Create a View with Max Negative TTL
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        max_negative_ttl: 1
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].max_negative_ttl == 1
+
+    - name: Create a View with Max UDP Size
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        max_udp_size: 4096
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].max_udp_size == 4096
+
+    - name: Create a View with Minimal Responses
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        minimal_responses: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].minimal_responses == true
+
+    - name: Create a View with Notify
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        notify: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].notify == true
+
+    - name: Create a View with Query ACL
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        query_acl:
+          - access: "allow"
+            element: "ip"
+            address: "192.168.11.11"
+          - access: "deny"
+            element: "any"
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].query_acl[0].access == "allow"
+          - view_info.objects[0].query_acl[0].element == "ip"
+          - view_info.objects[0].query_acl[0].address == "192.168.11.11"
+          - view_info.objects[0].query_acl[1].access == "deny"
+          - view_info.objects[0].query_acl[1].element == "any"
+          - view_info.objects[0].query_acl | length == 2
+            
+          - name: Create a View with Recursion ACL
+            tags: runm
+            infoblox.bloxone.dns_view:
+              name: "{{ name }}"
+              recursion_acl:
+                - access: "allow"
+                  element: "ip"
+                  address: "192.168.11.11"
+                - access: "deny"
+                  element: "any"
+              state: present
+            register: view
+          - name: Get Information about the View
+            infoblox.bloxone.dns_view_info:
+              filters:
+                name: "{{ name }}"
+            register: view_info
+          - assert:
+              that:
+                - view_info is not failed
+                - view_info.objects | length == 1
+                - view_info.objects[0].id == view.id
+                - view_info.objects[0].recursion_acl[0].access == "allow"
+                - view_info.objects[0].recursion_acl[0].element == "ip"
+                - view_info.objects[0].recursion_acl[0].address == "192.168.11.11"
+                - view_info.objects[0].recursion_acl[1].access == "deny"
+                - view_info.objects[0].recursion_acl[1].element == "any"
+                - view_info.objects[0].recursion_acl | length == 2
+
+    - name: Create a View with Recursion Enabled
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        recursion_enabled: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].recursion_enabled == true
+
+    - name: Create a View with Sort List
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        sort_list:
+          - element: "any"
+            prioritized_networks: "192.168.12.12"
+          - element: "ip"
+            prioritized_networks: "192.168.13.13"
+            source: "192.168.11.11"
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].sort_list[0].element == "any"
+          - view_info.objects[0].sort_list[0].prioritized_networks[0] == "192.168.12.12"
+          - view_info.objects[0].sort_list[1].element == "ip"
+          - view_info.objects[0].sort_list[1].prioritized_networks[0] == "192.168.13.13"
+          - view_info.objects[0].sort_list[1].source == "192.168.11.11"
+
+    - name: Create a View and Synthesize Address Records From HTTPS
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        synthesize_address_records_from_https: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].synthesize_address_records_from_https == true
+
+    - name: Create a View with Transfer ACL
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        transfer_acl:
+          - access: "allow"
+            element: "ip"
+            address: "192.168.11.11"
+          - access: "deny"
+            element: "any"
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].transfer_acl[0].access == "allow"
+          - view_info.objects[0].transfer_acl[0].element == "ip"
+          - view_info.objects[0].transfer_acl[0].address == "192.168.11.11"
+          - view_info.objects[0].transfer_acl[1].access == "deny"
+          - view_info.objects[0].transfer_acl[1].element == "any"
+          - view_info.objects[0].transfer_acl | length == 2
+            
+    - name: Create a View with Update ACL
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        update_acl:
+          - access: "allow"
+            element: "ip"
+            address: "192.168.11.11"
+          - access: "deny"
+            element: "any"
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].update_acl[0].access == "allow"
+          - view_info.objects[0].update_acl[0].element == "ip"
+          - view_info.objects[0].update_acl[0].address == "192.168.11.11"
+          - view_info.objects[0].update_acl[1].access == "deny"
+          - view_info.objects[0].update_acl[1].element == "any"
+          - view_info.objects[0].update_acl | length == 2
+
+    - name: Create a View with Use Forwarders For Subzones
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        use_forwarders_for_subzones: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].use_forwarders_for_subzones == true
+
+    - name: Create a View with Use Root Forwarders For Local Resolution With B1td
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        use_root_forwarders_for_local_resolution_with_b1td: true
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].use_root_forwarders_for_local_resolution_with_b1td == true
+
+    - name: Create a View with Zone Authority
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        zone_authority:
+            default_ttl: 28600
+            expire: 2519200
+            negative_ttl: 700
+            refresh: 10500
+            retry: 3500
+            rname: "host"
+            mname: "test.b1ddi"
+            use_default_mname: false
+        state: present
+      register: view
+    - name: Get Information about the View
+      infoblox.bloxone.dns_view_info:
+        filters:
+          name: "{{ name }}"
+      register: view_info
+    - assert:
+        that:
+          - view_info is not failed
+          - view_info.objects | length == 1
+          - view_info.objects[0].id == view.id
+          - view_info.objects[0].zone_authority.default_ttl == 28600
+          - view_info.objects[0].zone_authority.expire == 2519200
+          - view_info.objects[0].zone_authority.negative_ttl == 700
+          - view_info.objects[0].zone_authority.refresh == 10500
+          - view_info.objects[0].zone_authority.retry == 3500
+          - view_info.objects[0].zone_authority.rname == "host"
+          - view_info.objects[0].zone_authority.mname == "test.b1ddi"
+          - view_info.objects[0].zone_authority.use_default_mname == false
+
+  always:
+    # Cleanup if the test fails
+    - name: "Delete View"
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        state: "absent"
+      ignore_errors: true
