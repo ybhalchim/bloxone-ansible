@@ -1,0 +1,3 @@
+deprecated_features:
+  - b1_ipam_ip_subnet - is deprecated in favor of 'ipam_subnet'.
+  - b1_ipam_ip_subnet_gather - is deprecated in favor of 'ipam_subnet_info'.
