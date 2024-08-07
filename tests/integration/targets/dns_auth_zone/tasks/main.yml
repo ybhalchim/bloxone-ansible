@@ -1,0 +1,472 @@
+---
+
+#TODO: add tests
+# The following require additional plugins to be supported.
+# - internal_secondaries
+# - nsgs
+
+- module_defaults:
+    group/infoblox.bloxone.all:
+      csp_url: "{{ csp_url }}"
+      api_key: "{{ api_key }}"
+  block:
+    # Create a random Auth Zone name to avoid conflicts
+    - ansible.builtin.set_fact:
+        fqdn: "test-auth-zone-{{ 999999 | random | string }}.com."
+
+    - name: Create an Auth Zone (check mode)
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: external
+        view: "{{ _view.id }}"
+        state: present
+      check_mode: true
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone is changed
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 0
+
+    - name: Create an Auth Zone
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: external
+        view: "{{ _view.id }}"
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone is changed
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+
+    - name: Create an Auth Zone with External Primaries
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: external
+        external_primaries:
+          - fqdn: "as-infoblox-test.com."
+            address: "192.168.10.10"
+            type: "primary"
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].external_primaries[0].fqdn == "as-infoblox-test.com."
+          - auth_zone_info.objects[0].external_primaries[0].address == "192.168.10.10"
+          - auth_zone_info.objects[0].external_primaries[0].type == "primary"
+
+    - name: Create an Auth Zone (idempotent)
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: external
+        state: present
+      register: auth_zone
+    - assert:
+        that:
+          - auth_zone is not changed
+          - auth_zone is not failed
+
+    - name: Delete the Auth Zone (check mode)
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: external
+        state: absent
+      check_mode: true
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone is changed
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+
+    - name: Delete the Auth Zone
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: external
+        view: "{{ _view.id }}"
+        state: absent
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone is changed
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 0
+
+    - name: Delete the Auth Zone (idempotent)
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: external
+        view: "{{ _view.id }}"
+        state: absent
+      register: auth_zone
+    - assert:
+        that:
+          - auth_zone is not changed
+          - auth_zone is not failed
+
+    - name: Create an Auth Zone with tags
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        comment: "Test Comment"
+        view: "{{ _view.id }}"
+        tags:
+          location: "site-1"
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].tags.location == "site-1"
+
+    - name: Create an Auth Zone with a comment
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        comment: "Test Comment"
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].comment == "Test Comment"
+
+    - name: Create an Auth Zone with Disabled
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        disabled: true
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].disabled == true
+
+    - name: Create an Auth Zone with External Secondaries
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        external_secondaries:
+          - fqdn: "as-infoblox-test.com."
+            address: "192.168.10.10"
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].external_secondaries[0].fqdn == "as-infoblox-test.com."
+          - auth_zone_info.objects[0].external_secondaries[0].address == "192.168.10.10"
+
+
+    - name: Create an Auth Zone with primary type and FQDN
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].primary_type == "cloud"
+          - auth_zone_info.objects[0].fqdn == fqdn
+
+    - name: Create an Auth Zone with GSS Tsig Enabled
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        gss_tsig_enabled: true
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].gss_tsig_enabled == true
+
+    - name: "Create an Auth Zone space with Inheritance Sources"
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        inheritance_sources:
+          # The API currently requires all fields inside the inheritance config to be explicitly provided,
+          # or it fails with error 'The value of an inheritance action field is not valid'.
+          gss_tsig_enabled:
+            action: inherit
+          notify:
+            action: inherit
+          transfer_acl:
+            action: inherit
+          query_acl:
+            action: inherit
+          update_acl:
+            action: inherit
+          use_forwarders_for_subzones:
+            action: inherit
+          zone_authority:
+            default_ttl:
+              action: inherit
+            expire:
+              action: inherit
+            mname_block:
+              action: inherit
+            negative_ttl:
+              action: inherit
+            refresh:
+              action: inherit
+            retry:
+              action: inherit
+            rname:
+              action: inherit
+    - name: Get information about Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone is not failed
+          - auth_zone_info.objects | length == 1
+
+    - name: Create an Auth Zone with Notify
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        notify: true
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].notify == true
+
+    - name: Create an Auth Zone with Query ACL
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        query_acl:
+          - access: "allow"
+            element: "ip"
+            address: "192.168.11.11"
+          - access: "deny"
+            element: "any"
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].query_acl[0].access == "allow"
+          - auth_zone_info.objects[0].query_acl[0].element == "ip"
+          - auth_zone_info.objects[0].query_acl[0].address == "192.168.11.11"
+          - auth_zone_info.objects[0].query_acl[1].access == "deny"
+          - auth_zone_info.objects[0].query_acl[1].element == "any"
+          - auth_zone_info.objects[0].query_acl | length == 2
+
+    - name: Create an Auth Zone with Transfer ACL
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        transfer_acl:
+          - access: "allow"
+            element: "ip"
+            address: "192.168.11.11"
+          - access: "deny"
+            element: "any"
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].transfer_acl[0].access == "allow"
+          - auth_zone_info.objects[0].transfer_acl[0].element == "ip"
+          - auth_zone_info.objects[0].transfer_acl[0].address == "192.168.11.11"
+          - auth_zone_info.objects[0].transfer_acl[1].access == "deny"
+          - auth_zone_info.objects[0].transfer_acl[1].element == "any"
+          - auth_zone_info.objects[0].transfer_acl | length == 2
+
+    - name: Create an Auth Zone with Update ACL
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        update_acl:
+          - access: "allow"
+            element: "ip"
+            address: "192.168.11.11"
+          - access: "deny"
+            element: "any"
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].update_acl[0].access == "allow"
+          - auth_zone_info.objects[0].update_acl[0].element == "ip"
+          - auth_zone_info.objects[0].update_acl[0].address == "192.168.11.11"
+          - auth_zone_info.objects[0].update_acl[1].access == "deny"
+          - auth_zone_info.objects[0].update_acl[1].element == "any"
+          - auth_zone_info.objects[0].update_acl | length == 2
+
+    - name: Create an Auth Zone with Use Forwarders For Subzones
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        use_forwarders_for_subzones: true
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].use_forwarders_for_subzones == true
+
+    - name: Create an Auth Zone with Zone Authority
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        primary_type: cloud
+        zone_authority:
+            default_ttl: 28600
+            expire: 2519200
+            negative_ttl: 700
+            refresh: 10500
+            retry: 3500
+            rname: "host"
+            mname: "test.b1ddi"
+            use_default_mname: false
+        state: present
+      register: auth_zone
+    - name: Get Information about the Auth Zone
+      infoblox.bloxone.dns_auth_zone_info:
+        filters:
+          fqdn: "{{ fqdn }}"
+      register: auth_zone_info
+    - assert:
+        that:
+          - auth_zone_info is not failed
+          - auth_zone_info.objects | length == 1
+          - auth_zone_info.objects[0].id == auth_zone.id
+          - auth_zone_info.objects[0].zone_authority.default_ttl == 28600
+          - auth_zone_info.objects[0].zone_authority.expire == 2519200
+          - auth_zone_info.objects[0].zone_authority.negative_ttl == 700
+          - auth_zone_info.objects[0].zone_authority.refresh == 10500
+          - auth_zone_info.objects[0].zone_authority.retry == 3500
+          - auth_zone_info.objects[0].zone_authority.use_default_mname == false
+
+  always:
+    # Cleanup if the test fails
+    - name: "Delete Auth Zone"
+      infoblox.bloxone.dns_auth_zone:
+        fqdn: "{{ fqdn }}"
+        state: "absent"
+      ignore_errors: true
+
+    - name: "Delete the View"
+      infoblox.bloxone.dns_view:
+        name: "{{ name }}"
+        state: absent
+      register: _view
+      ignore_errors: true
