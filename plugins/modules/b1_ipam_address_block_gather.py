@@ -14,6 +14,9 @@ author: "Amit Mishra (@amishra), Sriram Kannan(@kannans)"
 contributor: "Chris Marrison (@ccmarris)"
 short_description: Gather information about Address Block in B1DDI
 version_added: "1.1.0"
+deprecated:
+  removed_in: 3.0.0
+  alternative: Use M(ipam_address_block_info) instead.
 description:
   - Gather information about Address Block object on Infoblox BloxOne DDI. This module gather information about address block object using BloxOne REST APIs.
 requirements:
