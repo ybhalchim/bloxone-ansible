@@ -18,6 +18,8 @@ action_groups:
     - ipam_subnet_info
     - ipam_address_block
     - ipam_address_block_info
+    - ipam_address
+    - ipam_address_info
 
 plugin_routing:
     modules:

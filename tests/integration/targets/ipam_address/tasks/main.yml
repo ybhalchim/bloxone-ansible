@@ -1,0 +1,165 @@
+---
+#TODO: add tests
+# The following require additional plugins to be supported.
+# - Address with NextAvailable ID count
+# - Address with NextAvailable Subnet
+# - Address with NextAvailable AddressBlock
+# - Address with NextAvailable Range
+- module_defaults:
+    group/infoblox.bloxone.all:
+      csp_url: "{{ csp_url }}"
+      api_key: "{{ api_key }}"
+  block:
+    # Create a random IP space name to avoid conflicts
+    - ansible.builtin.set_fact:
+        tag_value: "site-{{ 999999 | random | string }}"
+
+#    - name: Debug the IP space ID being used for address reservation
+#      debug:
+#        var: ip_space
+
+    # Basic tests for Address Block
+    - name: "create a address"
+      infoblox.bloxone.ipam_address:
+        address: "10.1.0.3"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: address
+    - name: "Get information about the address"
+      infoblox.bloxone.ipam_address_info:
+        filters: {
+          address: "10.1.0.3",
+          space: "{{ ip_space.id }}"
+        }
+      register: address_info
+    - assert:
+        that:
+          - address is changed
+          - address is not failed
+          - address_info.objects | length != 0
+
+    - name: "create a address(idempotent)"
+      infoblox.bloxone.ipam_address:
+        address: "10.1.0.3"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: address
+    - assert:
+        that:
+          - address is not changed
+          - address is not failed
+
+    - name: "create the address with names"
+      infoblox.bloxone.ipam_address:
+        address: "10.1.0.8"
+        names: [{"name": "test-1","type": "user"}]
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: address
+    - name: "Get information about the address"
+      infoblox.bloxone.ipam_address_info:
+        filters: {
+          address: "10.1.0.8",
+         space: "{{ ip_space.id }}"
+        }
+      register: address_info
+    - assert:
+        that:
+          - address is changed
+          - address is not failed
+          - address_info.objects | length > 0
+
+    - name: "create the address with names (check mode)"
+      infoblox.bloxone.ipam_address:
+        address: "10.1.0.8"
+        names: [{"name": "test-1","type": "user"}]
+        space: "{{ ip_space.id }}"
+        state: "present"
+      check_mode: true
+
+    - name: "create the address with comment"
+      infoblox.bloxone.ipam_address:
+        address: "10.1.0.5"
+        comment: "some comment"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: address
+    - name: "Get information about the address"
+      infoblox.bloxone.ipam_address_info:
+        filters: {
+          address: "10.1.0.5",
+          space: "{{ ip_space.id }}"
+        }
+      register: address_info
+    - assert:
+        that:
+          - address is changed
+          - address is not failed
+          - address_info.objects[0].comment == "some comment"
+
+    - name: "create the address with hwaddr"
+      infoblox.bloxone.ipam_address:
+        address: "10.1.0.6"
+        hwaddr : "00:11:22:33:44:55"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      check_mode: true
+
+    - name: "create the address with interface"
+      infoblox.bloxone.ipam_address:
+        address: "10.1.0.7"
+        interface: "eth0"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      check_mode: true
+
+    - name: "create the address with tags"
+      infoblox.bloxone.ipam_address:
+        address: "10.1.0.9"
+        tags: {	"tag1": "value1","tag2": "value2",}
+        space: "{{ ip_space.id }}"
+        state: "present"
+      check_mode: true
+
+#    - name: "create the address with next available id count"
+#      infoblox.bloxone.ipam_address:
+#        next_available_id : "{{ next_available_id  }}"
+#        space: "{{ ip_space.id }}"
+#        count: 5
+#        state: "present"
+#      check_mode: true
+
+    - name: "Delete a address"
+      infoblox.bloxone.ipam_address:
+        address: "10.1.0.3"
+        space: "{{ ip_space.id }}"
+        state: "absent"
+      register: ip_space
+    - name: Get information about the address
+      infoblox.bloxone.ipam_address_info:
+        filters: {
+          address: "10.1.0.3",
+          space: "{{ ip_space.id }}"
+        }
+      register: address_info
+    - assert:
+        that:
+          - address is changed
+          - address is not failed
+          - address_info.objects | length == 0
+
+
+    - name: "Delete a Subnet"
+      infoblox.bloxone.ipam_subnet:
+        address: "10.1.0.0/16"
+        space: "{{ ip_space.id }}"
+        state: "absent"
+      register: subnet
+
+    - name: "Delete IP Space"
+      infoblox.bloxone.ipam_ip_space:
+       # name: ip_space.object.name
+        name: "{{ ip_name }}"
+        state: "absent"
+      #check_mode: true
+      register: ip_space

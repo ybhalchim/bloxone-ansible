@@ -1,0 +1,28 @@
+---
+- module_defaults:
+    group/infoblox.bloxone.all:
+      csp_url: "{{ csp_url }}"
+      api_key: "{{ api_key }}"
+  block:
+    # Create a random IP space name to avoid conflicts
+    - ansible.builtin.set_fact:
+        ip_name: "test-ip-space1.-{{ 999999 | random | string }}"
+        tag_value: "site-{{ 999999 | random | string }}"
+
+    # Basic tests for Address Block
+    - name: "Create an IP space"
+      infoblox.bloxone.ipam_ip_space:
+        name: "{{ ip_name }}"
+        state: "present"
+      register: ip_space
+
+    - name: Debug the IP space name created
+      debug:
+        var: ip_space.object.name
+
+    - name: "Create a Subnet"
+      infoblox.bloxone.ipam_subnet:
+        address: "10.1.0.0/16"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: subnet
