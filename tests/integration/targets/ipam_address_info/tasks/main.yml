@@ -67,3 +67,18 @@
         name: "{{ ip_name }}"
         state: "absent"
       register: ip_space
+
+  always:
+      # Cleanup if the test fails
+    - name: Delete a Subnet
+      infoblox.bloxone.ipam_subnet:
+        address: "10.0.0.0/16"
+        space: "{{ ip_space.id }}"
+        state: "absent"
+      register: subnet
+
+    - name: Delete IP Space
+      infoblox.bloxone.ipam_ip_space:
+        name: "{{ ip_name }}"
+        state: "absent"
+      register: ip_space

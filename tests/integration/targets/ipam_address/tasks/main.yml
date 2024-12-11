@@ -13,6 +13,14 @@
   block:
 
     # Basic tests for Address
+    - name: Create a Address (check mode)
+      infoblox.bloxone.ipam_address:
+        address: "10.0.0.3"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      check_mode: true
+      register: address
+
     - name: Create a Address
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
@@ -30,7 +38,8 @@
         that:
           - address is changed
           - address is not failed
-          - address_info.objects | length != 0
+          - address_info.objects | length == 1
+          - address_info.objects[0].id == address.id
 
     - name: Create a Address(idempotent)
       infoblox.bloxone.ipam_address:
@@ -43,25 +52,64 @@
           - address is not changed
           - address is not failed
 
-    - name: Create the Address with Name
+    - name: Delete a Address (check mode)
       infoblox.bloxone.ipam_address:
-        address: "10.0.0.8"
-        names: [{"name": "test-1", "type": "user"}]
+        address: "10.0.0.3"
         space: "{{ ip_space.id }}"
-        state: "present"
+        state: "absent"
+      check_mode: true
+
+    - name: Delete a Address
+      infoblox.bloxone.ipam_address:
+        address: "10.0.0.3"
+        space: "{{ ip_space.id }}"
+        state: "absent"
       register: address
     - name: Get information about the Address
       infoblox.bloxone.ipam_address_info:
         filters: {
-          address: "10.0.0.8",
-         space: "{{ ip_space.id }}"
+          address: "10.0.0.3",
+          space: "{{ ip_space.id }}"
         }
       register: address_info
     - assert:
         that:
           - address is changed
           - address is not failed
-          - address_info.objects | length > 0
+          - address_info.objects | length == 0
+
+    - name: Delete a Address(idempotent)
+      infoblox.bloxone.ipam_address:
+        address: "10.0.0.3"
+        space: "{{ ip_space.id }}"
+        state: "absent"
+      register: address
+    - assert:
+        that:
+          - address is not changed
+          - address is not failed
+
+    - name: Create the Address with Name
+      infoblox.bloxone.ipam_address:
+        address: "10.0.0.3"
+        names:
+          - name: "test-1"
+            type: "user"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: address
+    - name: Get information about the Address
+      infoblox.bloxone.ipam_address_info:
+        filters:
+          address: "10.0.0.3"
+          space: "{{ ip_space.id }}"
+      register: address_info
+    - assert:
+        that:
+          - address is changed
+          - address is not failed
+          - address_info.objects | length == 1
+          - address_info.objects[0].names[0].name == address.object.names[0].name
 
     - name: Create the Address with comment
       infoblox.bloxone.ipam_address:
@@ -81,64 +129,88 @@
         that:
           - address is changed
           - address is not failed
-          - address_info.objects[0].comment == "some comment"
+          - address_info.objects | length == 1
+          - address_info.objects[0].id == address.id
+          - address_info.objects[0].comment == address.object.comment
 
-    - name: Create the Address with hwaddr (check mode)
+    - name: Create the Address with hwaddr
       infoblox.bloxone.ipam_address:
-        address: "10.0.0.8"
+        address: "10.0.0.6"
         hwaddr: "00:11:22:33:44:55"
         space: "{{ ip_space.id }}"
         state: "present"
-      check_mode: true
-
-    - name: Create the Address with Interface (check mode)
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.8"
-        interface: "eth0"
-        space: "{{ ip_space.id }}"
-        state: "present"
       register: address
-      check_mode: true
-
-    - name: Create the Address with Tags (check mode)
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.8"
-        tags: {"tag1": "value1", "tag2": "value2"}
-        space: "{{ ip_space.id }}"
-        state: "present"
-      check_mode: true
-
-    - name: Delete a Address
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.3"
-        space: "{{ ip_space.id }}"
-        state: "absent"
-
-    - name: Delete a Address
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.5"
-        space: "{{ ip_space.id }}"
-        state: "absent"
-
-    - name: Delete a Address
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.8"
-        space: "{{ ip_space.id }}"
-        state: "absent"
-
-    - name: Get information about the address
+    - name: Get information about the Address
       infoblox.bloxone.ipam_address_info:
         filters: {
-          address: "10.0.0.3",
-          space: "{{ ip_space.id }}"
+          address: "10.0.0.6",
+          space: "{{ ip_space.id }}",
+          hwaddr: "00:11:22:33:44:55"
         }
       register: address_info
     - assert:
         that:
           - address is changed
           - address is not failed
-          - address_info.objects | length == 0
+          - address_info.objects | length == 1
+          - address_info.objects[0].id == address.id
+          - address_info.objects[0].hwaddr == address.object.hwaddr
 
+    - name: Create the Address with Interface
+      infoblox.bloxone.ipam_address:
+        address: "10.0.0.7"
+        interface: "eth0"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: address
+    - name: Get information about the Address
+      infoblox.bloxone.ipam_address_info:
+        filters: {
+          address: "10.0.0.7",
+          space: "{{ ip_space.id }}",
+          interface: "eth0"
+        }
+      register: address_info
+    - assert:
+        that:
+          - address is changed
+          - address is not failed
+          - address_info.objects | length == 1
+          - address_info.objects[0].id == address.id
+          - address_info.objects[0].interface == address.object.interface
+
+    - name: Create the Address with Tags
+      infoblox.bloxone.ipam_address:
+        address: "10.0.0.8"
+        tags: {"tag1": "value1", "tag2": "value2"}
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: address
+    - name: Get information about the Address
+      infoblox.bloxone.ipam_address_info:
+        filters: {
+          address: "10.0.0.8",
+          space: "{{ ip_space.id }}",
+        }
+      register: address_info
+    - name: Debug address
+      debug:
+        var: address
+
+    - name: Debug address_info
+      debug:
+        var: address_info
+    - assert:
+        that:
+          - address is changed
+          - address is not failed
+          - address_info.objects | length == 1
+          - address_info.objects[0].id == address.id
+          - address_info.objects[0].tags.tag1 == "value1"
+          - address_info.objects[0].tags.tag2 == "value2"
+
+  always:
+      # Cleanup if the test fails
     - name: Delete a Subnet
       infoblox.bloxone.ipam_subnet:
         address: "10.0.0.0/16"

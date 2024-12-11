@@ -15,10 +15,6 @@
         state: "present"
       register: ip_space
 
-    - name: Debug the IP space name created
-      debug:
-        var: ip_space.object.name
-
     - name: Create a Subnet
       infoblox.bloxone.ipam_subnet:
         address: "10.0.0.0/16"
