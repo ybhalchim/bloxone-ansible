@@ -46,7 +46,7 @@
     - name: Create the Address with Name
       infoblox.bloxone.ipam_address:
         address: "10.0.0.8"
-        names: [{"name": "test-1","type": "user"}]
+        names: [{"name": "test-1", "type": "user"}]
         space: "{{ ip_space.id }}"
         state: "present"
       register: address
@@ -86,7 +86,7 @@
     - name: Create the Address with hwaddr (check mode)
       infoblox.bloxone.ipam_address:
         address: "10.0.0.8"
-        hwaddr : "00:11:22:33:44:55"
+        hwaddr: "00:11:22:33:44:55"
         space: "{{ ip_space.id }}"
         state: "present"
       check_mode: true
@@ -103,7 +103,7 @@
     - name: Create the Address with Tags (check mode)
       infoblox.bloxone.ipam_address:
         address: "10.0.0.8"
-        tags: {	"tag1": "value1","tag2": "value2",}
+        tags: {"tag1": "value1", "tag2": "value2"}
         space: "{{ ip_space.id }}"
         state: "present"
       check_mode: true

@@ -7,8 +7,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from plugins.lookup.bloxone import EXAMPLES
-
 DOCUMENTATION = r"""
 ---
 module: ipam_address
@@ -40,10 +38,6 @@ options:
         description:
             - "The description for the address object. May contain 0 to 1024 characters. Can include UTF-8."
         type: str
-    external_keys:
-        description:
-            - "The external keys (source key) for this address in JSON format."
-        type: dict
     host:
         description:
             - "The resource identifier."
@@ -164,7 +158,7 @@ EXAMPLES = r"""
     - name: Create the Address with Tags (check mode)
       infoblox.bloxone.ipam_address:
         address: "10.0.0.8"
-        tags: {	"tag1": "value1","tag2": "value2",}
+        tags: { "tag1": "value1","tag2": "value2",}
         space: "{{ ip_space.id }}"
         state: "present"
       check_mode: true
@@ -333,11 +327,6 @@ item:
         discovery_metadata:
             description:
                 - "The discovery metadata for this address in JSON format."
-            type: dict
-            returned: Always
-        external_keys:
-            description:
-                - "The external keys (source key) for this address in JSON format."
             type: dict
             returned: Always
         host:
@@ -530,7 +519,9 @@ class AddressModule(BloxoneAnsibleModule):
                 after=item,
             )
             result["object"] = item
-            result["id"] = self.existing.id if self.existing is not None else item["id"] if (item and "id" in item) else None
+            result["id"] = (
+                self.existing.id if self.existing is not None else item["id"] if (item and "id" in item) else None
+            )
         except ApiException as e:
             self.fail_json(msg=f"Failed to execute command: {e.status} {e.reason} {e.body}")
 
@@ -543,19 +534,21 @@ def main():
         state=dict(type="str", required=False, choices=["present", "absent"], default="present"),
         address=dict(type="str"),
         comment=dict(type="str"),
-        external_keys=dict(type="dict"),
         host=dict(type="str"),
         hwaddr=dict(type="str"),
         interface=dict(type="str"),
-        names=dict(type="list", elements="dict", options=dict(
-            name=dict(type="str"),
-            type=dict(type="str"),
-        )),
+        names=dict(
+            type="list",
+            elements="dict",
+            options=dict(
+                name=dict(type="str"),
+                type=dict(type="str"),
+            ),
+        ),
         parent=dict(type="str"),
         range=dict(type="str"),
         space=dict(type="str"),
         tags=dict(type="dict"),
-
     )
 
     module = AddressModule(

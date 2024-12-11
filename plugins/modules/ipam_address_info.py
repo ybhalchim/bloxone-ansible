@@ -7,8 +7,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-from plugins.lookup.bloxone import EXAMPLES
-
 DOCUMENTATION = r"""
 ---
 module: ipam_address_info
@@ -129,7 +127,7 @@ EXAMPLES = r"""
         name: "{{ ip_name }}"
         state: "absent"
       register: ip_space
-"""# noqa: E501
+"""  # noqa: E501
 
 RETURN = r"""
 id:

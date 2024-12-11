@@ -41,7 +41,7 @@
     - name: Get information about the Address by tag
       infoblox.bloxone.ipam_address_info:
         tag_filters:
-          region : "eu"
+          region: "eu"
       register: address_info
     - assert:
         that:
