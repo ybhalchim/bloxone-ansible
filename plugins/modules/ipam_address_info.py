@@ -7,6 +7,8 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+from plugins.lookup.bloxone import EXAMPLES
+
 DOCUMENTATION = r"""
 ---
 module: ipam_address_info
@@ -55,6 +57,79 @@ options:
 extends_documentation_fragment:
     - infoblox.bloxone.common
 """  # noqa: E501
+
+EXAMPLES = r"""
+    - name: "Create an IP space"
+      infoblox.bloxone.ipam_ip_space:
+        name: "{{ ip_name }}"
+        state: "present"
+      register: ip_space
+
+    - name: "Create a Subnet"
+      infoblox.bloxone.ipam_subnet:
+        address: "10.0.0.0/16"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: subnet
+      
+    - name: Create A Address
+      infoblox.bloxone.ipam_address:
+        address: "10.0.0.3"
+        space: "{{ ip_space.id }}"
+        tags:
+          region: "eu"
+        state: "present"
+      register: address
+
+    - name: Get information about the Address by ID
+      infoblox.bloxone.ipam_address_info:
+        id: "{{ address.id }}"
+      register: address_info
+    - assert:
+        that:
+          - address_info.objects | length != 0
+
+    - name: Get Address Block information by filters
+      infoblox.bloxone.ipam_address_info:
+        filters:
+          address: "10.0.0.3"
+          space: "{{ ip_space.id }}"
+      register: address_info
+    - assert:
+        that:
+          - address_info.objects | length == 1
+          - address_info.objects[0].id == address.id
+
+    - name: Get information about the Address by tag
+      infoblox.bloxone.ipam_address_info:
+        tag_filters:
+          region : "eu"
+      register: address_info
+    - assert:
+        that:
+          - address_info.objects | length != 0
+
+    - name:  Get Address information by filter query
+      infoblox.bloxone.ipam_address_info:
+        filter_query: "address=='10.0.0.3' and space=='{{ ip_space.id }}'"
+      register: address_info
+    - assert:
+        that:
+          - address_info.objects | length != 0
+
+    - name: "Delete a Subnet"
+      infoblox.bloxone.ipam_subnet:
+        address: "10.0.0.0/16"
+        space: "{{ ip_space.id }}"
+        state: "absent"
+      register: subnet
+
+    - name: "Delete IP Space"
+      infoblox.bloxone.ipam_ip_space:
+        name: "{{ ip_name }}"
+        state: "absent"
+      register: ip_space
+"""# noqa: E501
 
 RETURN = r"""
 id:
@@ -279,7 +354,7 @@ class AddressInfoModule(BloxoneAnsibleModule):
 
     def find_by_id(self):
         try:
-            resp = AddressApi(self.client).read(self.params["id"], inherit="full")
+            resp = AddressApi(self.client).read(self.params["id"])
             return [resp.result]
         except NotFoundException as e:
             return None

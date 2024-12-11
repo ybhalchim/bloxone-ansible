@@ -1,0 +1,69 @@
+---
+
+- module_defaults:
+    group/infoblox.bloxone.all:
+      csp_url: "{{ csp_url }}"
+      api_key: "{{ api_key }}"
+  block:
+    # Create a random IP space name to avoid conflicts
+    - ansible.builtin.set_fact:
+        tag_value: "site-{{ 999999 | random | string }}"
+
+    # Basic tests for Address Block
+    - name: Create A Address
+      infoblox.bloxone.ipam_address:
+        address: "10.0.0.3"
+        space: "{{ ip_space.id }}"
+        tags:
+          region: "eu"
+        state: "present"
+      register: address
+
+    - name: Get information about the Address by ID
+      infoblox.bloxone.ipam_address_info:
+        id: "{{ address.id }}"
+      register: address_info
+    - assert:
+        that:
+          - address_info.objects | length != 0
+
+    - name: Get Address Block information by filters
+      infoblox.bloxone.ipam_address_info:
+        filters:
+          address: "10.0.0.3"
+          space: "{{ ip_space.id }}"
+      register: address_info
+    - assert:
+        that:
+          - address_info.objects | length == 1
+          - address_info.objects[0].id == address.id
+
+    - name: Get information about the Address by tag
+      infoblox.bloxone.ipam_address_info:
+        tag_filters:
+          region : "eu"
+      register: address_info
+    - assert:
+        that:
+          - address_info.objects | length != 0
+
+    - name:  Get Address information by filter query
+      infoblox.bloxone.ipam_address_info:
+        filter_query: "address=='10.0.0.3' and space=='{{ ip_space.id }}'"
+      register: address_info
+    - assert:
+        that:
+          - address_info.objects | length != 0
+
+    - name: "Delete a Subnet"
+      infoblox.bloxone.ipam_subnet:
+        address: "10.0.0.0/16"
+        space: "{{ ip_space.id }}"
+        state: "absent"
+      register: subnet
+
+    - name: "Delete IP Space"
+      infoblox.bloxone.ipam_ip_space:
+        name: "{{ ip_name }}"
+        state: "absent"
+      register: ip_space
