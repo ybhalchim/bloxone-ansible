@@ -86,13 +86,13 @@ extends_documentation_fragment:
 """  # noqa: E501
 
 EXAMPLES = r"""
-    - name: "Create an IP space"
+    - name: "Create an IP space (required as parent)"
       infoblox.bloxone.ipam_ip_space:
-        name: "{{ ip_name }}"
+        name: "example-test-ipspace"
         state: "present"
       register: ip_space
 
-    - name: "Create a Subnet"
+    - name: "Create a Subnet (required as parent)"
       infoblox.bloxone.ipam_subnet:
         address: "10.0.0.0/16"
         space: "{{ ip_space.id }}"
@@ -105,18 +105,6 @@ EXAMPLES = r"""
         space: "{{ ip_space.id }}"
         state: "present"
       register: address
-    - name: Get information about the Address
-      infoblox.bloxone.ipam_address_info:
-        filters: {
-          address: "10.0.0.3",
-          space: "{{ ip_space.id }}"
-        }
-      register: address_info
-    - assert:
-        that:
-          - address is changed
-          - address is not failed
-          - address_info.objects | length != 0
 
     - name: Create the Address with Name
       infoblox.bloxone.ipam_address:
@@ -125,87 +113,22 @@ EXAMPLES = r"""
         space: "{{ ip_space.id }}"
         state: "present"
       register: address
-    - name: Get information about the Address
-      infoblox.bloxone.ipam_address_info:
-        filters: {
-          address: "10.0.0.8",
-         space: "{{ ip_space.id }}"
-        }
-      register: address_info
-    - assert:
-        that:
-          - address is changed
-          - address is not failed
-          - address_info.objects | length > 0
 
-    - name: Create the Address with hwaddr (check mode)
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.8"
-        hwaddr : "00:11:22:33:44:55"
-        space: "{{ ip_space.id }}"
-        state: "present"
-      check_mode: true
-
-    - name: Create the Address with Interface (check mode)
+    - name: Create the Address with Interface
       infoblox.bloxone.ipam_address:
         address: "10.0.0.8"
         interface: "eth0"
         space: "{{ ip_space.id }}"
         state: "present"
       register: address
-      check_mode: true
 
-    - name: Create the Address with Tags (check mode)
+    - name: Create the Address with Tags
       infoblox.bloxone.ipam_address:
         address: "10.0.0.8"
-        tags: { "tag1": "value1","tag2": "value2",}
+        tags: {"location": "site 1"}
         space: "{{ ip_space.id }}"
         state: "present"
-      check_mode: true
 
-    - name: Delete a Address
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.3"
-        space: "{{ ip_space.id }}"
-        state: "absent"
-
-    - name: Delete a Address
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.5"
-        space: "{{ ip_space.id }}"
-        state: "absent"
-
-    - name: Delete a Address
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.8"
-        space: "{{ ip_space.id }}"
-        state: "absent"
-
-    - name: Get information about the address
-      infoblox.bloxone.ipam_address_info:
-        filters: {
-          address: "10.0.0.3",
-          space: "{{ ip_space.id }}"
-        }
-      register: address_info
-    - assert:
-        that:
-          - address is changed
-          - address is not failed
-          - address_info.objects | length == 0
-
-    - name: Delete a Subnet
-      infoblox.bloxone.ipam_subnet:
-        address: "10.0.0.0/16"
-        space: "{{ ip_space.id }}"
-        state: "absent"
-      register: subnet
-
-    - name: Delete IP Space
-      infoblox.bloxone.ipam_ip_space:
-        name: "{{ ip_name }}"
-        state: "absent"
-      register: ip_space
 """  # noqa: E501
 
 RETURN = r"""
