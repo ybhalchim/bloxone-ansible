@@ -56,11 +56,10 @@ EXAMPLES = r"""
         filters:
           fqdn: "delegation.example_zone."
           
-    - name: Get Delegation information by filters (e.g. fqdn,view)
+    - name: Get Delegation information by filters (e.g. fqdn)
       infoblox.bloxone.dns_delegation_info:
         filters:
           fqdn: "delegation.example_zone."
-          view: '{{ view_id }}'
 
     - name: Get Delegation information by raw filter query
       infoblox.bloxone.dns_delegation_info:
