@@ -50,25 +50,21 @@ EXAMPLES = r"""
     - name: Get information about the Address by ID
       infoblox.bloxone.ipam_address_info:
         id: "{{ address.id }}"
-      register: address_info
 
     - name: Get Address Block information by filters
       infoblox.bloxone.ipam_address_info:
         filters:
           address: "10.0.0.3"
           space: "{{ ip_space.id }}"
-      register: address_info
 
     - name: Get information about the Address by tag
       infoblox.bloxone.ipam_address_info:
         tag_filters:
-          region : "eu"
-      register: address_info
+          location : "site-1"
 
     - name:  Get Address information by filter query
       infoblox.bloxone.ipam_address_info:
         filter_query: "address=='10.0.0.3' and space=='{{ ip_space.id }}'"
-      register: address_info
 """  # noqa: E501
 
 RETURN = r"""

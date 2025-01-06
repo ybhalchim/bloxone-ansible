@@ -103,31 +103,16 @@ EXAMPLES = r"""
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
         space: "{{ ip_space.id }}"
-        state: "present"
-      register: address
-
-    - name: Create the Address with Name
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.8"
-        names: [{"name": "test-1","type": "user"}]
-        space: "{{ ip_space.id }}"
-        state: "present"
-      register: address
-
-    - name: Create the Address with Interface
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.8"
-        interface: "eth0"
-        space: "{{ ip_space.id }}"
-        state: "present"
-      register: address
-
-    - name: Create the Address with Tags
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.8"
         tags: {"location": "site 1"}
-        space: "{{ ip_space.id }}"
         state: "present"
+      register: address
+
+    - name: Delete a Address
+      infoblox.bloxone.ipam_address:
+        address: "10.0.0.3"
+        space: "{{ _ip_space.id }}"
+        state: "absent"
+      register: address
 
 """  # noqa: E501
 
