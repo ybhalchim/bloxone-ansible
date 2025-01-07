@@ -6,24 +6,24 @@
       api_key: "{{ api_key }}"
   block:
     # Basic tests for Address Block
-    - name: Create A Address
+    - name: Create an Address
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
         space: "{{ _ip_space.id }}"
         tags:
-          region: "eu"
+          location : "{{ tag_value }}"
         state: "present"
       register: address
 
-    - name: Get information about the Address by ID
+    - name: Get Address information by ID
       infoblox.bloxone.ipam_address_info:
         id: "{{ address.id }}"
       register: address_info
     - assert:
         that:
-          - address_info.objects | length != 0
+          - address_info.objects | length == 1
 
-    - name: Get Address Block information by filters
+    - name: Get Address information by filters
       infoblox.bloxone.ipam_address_info:
         filters:
           address: "10.0.0.3"
@@ -34,10 +34,10 @@
           - address_info.objects | length == 1
           - address_info.objects[0].id == address.id
 
-    - name: Get information about the Address by tag
+    - name: Get Address information by tag
       infoblox.bloxone.ipam_address_info:
         tag_filters:
-          region: "eu"
+          location : "{{ tag_value }}"
       register: address_info
     - assert:
         that:
@@ -53,12 +53,12 @@
 
   always:
       # Cleanup if the test fails
-    - name: Delete a Subnet
-      infoblox.bloxone.ipam_subnet:
-        address: "10.0.0.0/16"
-        space: "{{ _ip_space.id }}"
-        state: "absent"
-      register: subnet
+#    - name: Delete a Subnet
+#      infoblox.bloxone.ipam_subnet:
+#        address: "10.0.0.0/16"
+#        space: "{{ _ip_space.id }}"
+#        state: "absent"
+#      register: subnet
 
     - name: Delete IP Space
       infoblox.bloxone.ipam_ip_space:

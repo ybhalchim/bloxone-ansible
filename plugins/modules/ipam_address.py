@@ -99,7 +99,7 @@ EXAMPLES = r"""
         state: "present"
       register: subnet
 
-    - name: Create a Address
+    - name: Create an Address
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
         space: "{{ ip_space.id }}"
@@ -107,7 +107,7 @@ EXAMPLES = r"""
         state: "present"
       register: address
 
-    - name: Delete a Address
+    - name: Delete an Address
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
         space: "{{ _ip_space.id }}"
@@ -386,6 +386,9 @@ class AddressModule(BloxoneAnsibleModule):
     def update(self):
         if self.check_mode:
             return None
+
+        update_body = self.payload
+        update_body = self.validate_readonly_on_update(self.existing, update_body, ["space"])
 
         resp = AddressApi(self.client).update(id=self.existing.id, body=self.payload)
         return resp.result.model_dump(by_alias=True, exclude_none=True)
