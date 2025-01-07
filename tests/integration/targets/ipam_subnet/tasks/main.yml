@@ -16,6 +16,13 @@
         state: "present"
       register: ip_space
 
+    - name: "Create an Address Block"
+      infoblox.bloxone.ipam_address_block:
+        address: "10.0.0.0/16"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: address_block
+
     - name: "Create a Subnet (check mode)"
       infoblox.bloxone.ipam_subnet:
         address: "10.0.0.0/24"
@@ -498,6 +505,60 @@
           - subnet_info.objects | length == 1
           - subnet_info.objects[0].id == subnet.id
           - subnet_info.objects[0].cidr == 24
+
+#    - name: Create a Next available Subnet(Check mode)
+#      infoblox.bloxone.ipam_subnet:
+#        cidr: 24
+#        next_available_id : "{{ address_block.id }}"
+#        space: "{{ ip_space.id }}"
+#        state: "present"
+#      check_mode: true
+#      register: next_available_subnet
+#    - name: Get information about the Subnet
+#      infoblox.bloxone.ipam_subnet_info:
+#        filters:
+#          address: "10.0.0.0"
+#          space: "{{ ip_space.id }}"
+#          cidr: 24
+#      register: next_available_subnet_info
+#    - assert:
+#        that:
+#          - next_available_subnet is changed
+#          - next_available_subnet is not failed
+#          - next_available_subnet_info.objects | length == 0
+
+    - name: Create a Next available Subnet
+      infoblox.bloxone.ipam_subnet:
+        cidr: 24
+        next_available_id : "{{ address_block.id }}"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: next_available_subnet
+    - name: Get information about the Subnet
+      infoblox.bloxone.ipam_subnet_info:
+        id: "{{ next_available_subnet.id }}"
+      register: next_available_subnet_info
+    - assert:
+        that:
+          - next_available_subnet is changed
+          - next_available_subnet is not failed
+          - next_available_subnet_info.objects | length == 1
+
+#    - name: Create a Next available Subnet using subnet as parent
+#      infoblox.bloxone.ipam_subnet:
+#        cidr: 24
+#        next_available_id : "{{ subnet.id }}"
+#        space: "{{ ip_space.id }}"
+#        state: "present"
+#      register: next_available_subnet
+#
+#    - assert:
+#        that:
+#          - next_available_subnet is not none
+#          - next_available_subnet.changed == true
+#          - next_available_subnet_info is defined
+#          - next_available_subnet_info.objects | length == 1
+
 
   always:
     # Cleanup if the test fails
