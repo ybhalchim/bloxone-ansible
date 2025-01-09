@@ -745,17 +745,28 @@ options:
                 description:
                     - "The low threshold value for the percentage of used IP addresses relative to the total IP addresses available in the scope of the object. Thresholds are inclusive in the comparison test."
                 type: int
+    next_available_id:
+        description:
+            - "The resource identifier for the address block where the next available subnet should be generated."
+        type: str
 
 extends_documentation_fragment:
     - infoblox.bloxone.common
 """  # noqa: E501
 
 EXAMPLES = r"""
-    - name: "Create an ip space"
+    - name: "Create an ip space (required as parent)"
       infoblox.bloxone.ipam_ip_space:
         name: "my-ip-space"
         state: "present"
       register: ip_space
+
+    - name: "Create an Address Block (required as parent)"
+      infoblox.bloxone.ipam_address_block:
+        address: "10.0.0.0/16"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: address_block
 
     - name: "Create a subnet"
       infoblox.bloxone.ipam_subnet:
@@ -797,7 +808,15 @@ EXAMPLES = r"""
                     action: inherit
                 lease_time_v6:
                     action: inherit
-
+                    
+    - name: "Create a Next available Subnet"
+      infoblox.bloxone.ipam_subnet:
+        cidr: 24
+        next_available_id: "{{ address_block.id }}"
+        space: "{{ ip_space.id }}"
+        state: "present"
+      register: next_available_subnet
+      
     - name: "Delete a subnet"
       infoblox.bloxone.ipam_subnet:
         address: "10.0.0.0"
@@ -2537,7 +2556,7 @@ def main():
         id=dict(type="str", required=False),
         state=dict(type="str", required=False, choices=["present", "absent"], default="present"),
         address=dict(type="str"),
-        next_available_id=dict(type="str",required=False),
+        next_available_id=dict(type="str", required=False),
         asm_config=dict(
             type="dict",
             options=dict(

@@ -9,7 +9,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 ---
-module: ipam_subnet_info
+module: ipam_next_available_subnet_info
 short_description: Manage Subnet
 description:
     - Manage Subnet
@@ -18,38 +18,18 @@ author: Infoblox Inc. (@infobloxopen)
 options:
     id:
         description:
-            - ID of the object
+            - An application specific resource identity of a resource
         type: str
-        required: false
-    filters:
+        required: true
+    cidr:
         description:
-            - Filter dict to filter objects
-        type: dict
-        required: false
-    filter_query:
+            - The cidr value of address blocks to be created.
+        type: int
+        required: true
+    count:
         description:
-            - Filter query to filter objects
-        type: str
-        required: false
-    inherit:
-        description:
-            - Return inheritance information
-        type: str
-        required: false
-        choices:
-            - full
-            - partial
-            - none
-        default: full
-    tag_filters:
-        description:
-            - Filter dict to filter objects by tags
-        type: dict
-        required: false
-    tag_filter_query:
-        description:
-            - Filter query to filter objects by tags
-        type: str
+            - Number of address blocks to generate. Default 1 if not set.
+        type: int
         required: false
 
 extends_documentation_fragment:
@@ -57,23 +37,17 @@ extends_documentation_fragment:
 """  # noqa: E501
 
 EXAMPLES = r"""
-  - name: Get Subnet information by ID
-    infoblox.bloxone.ipam_subnet_info:
-      id: "{{ subnet_id }}"
+    - name: "Get information about the Subnet"
+      infoblox.bloxone.ipam_next_available_subnet_info:
+        id: "{{ address_block.id }}"
+        cidr: 24
 
-  - name: Get Subnet information by filters (e.g. address)
-    infoblox.bloxone.ipam_subnet_info:
-      filters:
-        address: "10.0.0.0/24"
+    - name: "Get information about the Subnet with count"
+      infoblox.bloxone.ipam_next_available_subnet_info:
+        id: "{{ address_block.id }}"
+        cidr: 24
+        count: 5
 
-  - name: Get Subnet information by raw filter query
-    infoblox.bloxone.ipam_subnet_info:
-      filter_query: "address=='10.0.0.0/24'"
-
-  # - name: Get Subnet information by tag filters
-  #   infoblox.bloxone.ipam_subnet_info:
-  #     tag_filters:
-  #       location: "site-1"
 """
 
 RETURN = r"""
@@ -1676,8 +1650,8 @@ objects:
 from ansible_collections.infoblox.bloxone.plugins.module_utils.modules import BloxoneAnsibleModule
 
 try:
-    from bloxone_client import ApiException, NotFoundException
-    from ipam import SubnetApi, AddressBlockApi
+    from bloxone_client import ApiException
+    from ipam import AddressBlockApi
 except ImportError:
     pass  # Handled by BloxoneAnsibleModule
 
@@ -1735,10 +1709,6 @@ def main():
     module = NextAvailableSubnetInfoModule(
         argument_spec=module_args,
         supports_check_mode=True,
-        mutually_exclusive=[
-            ["id", "filters", "filter_query"],
-            ["id", "tag_filters", "tag_filter_query"],
-        ],
     )
     module.run_command()
 
