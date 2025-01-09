@@ -6,11 +6,11 @@
   block:
     # Create a random IP space name to avoid conflicts
     - ansible.builtin.set_fact:
-        name: "ip-space-{{ 999999 | random | string }}"
+        ip_space_name: "ip-space-{{ 999999 | random | string }}"
         tag_value: "site-{{ 999999 | random | string }}"
 
     - name: "Create an IP space"
       infoblox.bloxone.ipam_ip_space:
-          name: "{{ name }}"
+          name: "{{ ip_space_name }}"
           state: "present"
       register: _ip_space

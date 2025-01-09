@@ -1,11 +1,6 @@
 ---
 #TODO: add tests
 # The following require additional plugins to be supported.
-# - Address with NextAvailable ID count
-# - Address with NextAvailable Subnet
-# - Address with NextAvailable AddressBlock
-# - Address with NextAvailable Range
--
 - module_defaults:
     group/infoblox.bloxone.all:
       csp_url: "{{ csp_url }}"
@@ -20,7 +15,7 @@
         state: "present"
       check_mode: true
       register: address
-    - name: Get information about Address
+    - name: Get information about the Address
       infoblox.bloxone.ipam_address_info:
         filters:
           address: "10.0.0.3"
@@ -38,7 +33,7 @@
         space: "{{ _ip_space.id }}"
         state: "present"
       register: address
-    - name: Get information about Address
+    - name: Get information about the Address
       infoblox.bloxone.ipam_address_info:
         filters:
           address: "10.0.0.3"
@@ -51,7 +46,7 @@
           - address_info.objects | length == 1
           - address_info.objects[0].id == address.id
 
-    - name: Create a Address(idempotent)
+    - name: Create an Address(idempotent)
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
         space: "{{ _ip_space.id }}"
@@ -62,7 +57,7 @@
           - address is not changed
           - address is not failed
 
-    - name: Delete a Address (check mode)
+    - name: Delete an Address (check mode)
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
         space: "{{ _ip_space.id }}"
@@ -81,7 +76,7 @@
           - address is not failed
           - address_info.objects | length == 1
 
-    - name: Delete a Address
+    - name: Delete an Address
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
         space: "{{ _ip_space.id }}"
@@ -99,7 +94,7 @@
           - address is not failed
           - address_info.objects | length == 0
 
-    - name: Delete a Address(idempotent)
+    - name: Delete an Address(idempotent)
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
         space: "{{ _ip_space.id }}"
@@ -218,15 +213,7 @@
 
   always:
       # Cleanup if the test fails
-#    - name: Delete a Subnet
-#      infoblox.bloxone.ipam_subnet:
-#        address: "10.0.0.0/16"
-#        space: "{{ _ip_space.id }}"
-#        state: "absent"
-#      register: subnet
-
     - name: Delete IP Space
-      infoblox.bloxone.ipam_ip_space:
-        name: "{{ name }}"
-        state: "absent"
-      register: ip_space
+      ansible.builtin.include_role:
+        name: setup_ip_space
+        tasks_from: cleanup.yml

@@ -5,7 +5,7 @@
       csp_url: "{{ csp_url }}"
       api_key: "{{ api_key }}"
   block:
-    # Basic tests for Address Block
+    # Basic tests for Address
     - name: Create an Address
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
@@ -34,7 +34,7 @@
           - address_info.objects | length == 1
           - address_info.objects[0].id == address.id
 
-    - name: Get Address information by tag
+    - name: Get Address information by tag_filters
       infoblox.bloxone.ipam_address_info:
         tag_filters:
           location: "{{ tag_value }}"
@@ -53,15 +53,7 @@
 
   always:
       # Cleanup if the test fails
-#    - name: Delete a Subnet
-#      infoblox.bloxone.ipam_subnet:
-#        address: "10.0.0.0/16"
-#        space: "{{ _ip_space.id }}"
-#        state: "absent"
-#      register: subnet
-
     - name: Delete IP Space
-      infoblox.bloxone.ipam_ip_space:
-        name: "{{ name }}"
-        state: "absent"
-      register: ip_space
+      ansible.builtin.include_role:
+        name: setup_ip_space
+        tasks_from: cleanup.yml
