@@ -79,7 +79,7 @@
         that:
           - address is changed
           - address is not failed
-          - address_info.objects | length == 0
+          - address_info.objects | length == 1
 
     - name: Delete a Address
       infoblox.bloxone.ipam_address:
@@ -199,7 +199,7 @@
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
         tags:
-          "location" : "{{ tag_value }}"
+          location: "{{ tag_value }}"
         space: "{{ _ip_space.id }}"
         state: "present"
       register: address
