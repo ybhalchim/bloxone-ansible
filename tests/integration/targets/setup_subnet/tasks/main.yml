@@ -4,7 +4,7 @@
       csp_url: "{{ csp_url }}"
       api_key: "{{ api_key }}"
   block:
-    # Create a random IP space name to avoid conflicts
+    # Create a random Subnet name to avoid conflicts
     - ansible.builtin.set_fact:
         name: "subnet-{{ 999999 | random | string }}"
 
