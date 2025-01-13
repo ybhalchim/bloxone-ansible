@@ -1,11 +1,11 @@
 ---
-#TODO: add tests
-# The following require additional plugins to be supported.
 - module_defaults:
     group/infoblox.bloxone.all:
       csp_url: "{{ csp_url }}"
       api_key: "{{ api_key }}"
   block:
+    - ansible.builtin.set_fact:
+        tag_value: "site-{{ 999999 | random | string }}"
 
     # Basic tests for Address
     - name: Create an Address (check mode)
@@ -56,6 +56,57 @@
         that:
           - address is not changed
           - address is not failed
+
+    - name: Create a Next Available Address in Subnet
+      infoblox.bloxone.ipam_address:
+        space: "{{ _ip_space.id }}"
+        next_available_id: "{{ _subnet.id }}"
+        state: "present"
+      register: next_available_address
+    - name: Get information about the Address
+      infoblox.bloxone.ipam_address_info:
+        id: "{{ next_available_address.id }}"
+      register: address_info
+    - assert:
+        that:
+          - next_available_address is changed
+          - next_available_address is not failed
+          - address_info.objects | length == 1
+          - address_info.objects[0].id == next_available_address.id
+
+    - name: Create a Next Available Address in Address Block
+      infoblox.bloxone.ipam_address:
+        space: "{{ _ip_space.id }}"
+        next_available_id: "{{ _address_block.id }}"
+        state: "present"
+      register: next_available_address
+    - name: Get information about the Address
+      infoblox.bloxone.ipam_address_info:
+        id: "{{ next_available_address.id }}"
+      register: address_info
+    - assert:
+        that:
+          - next_available_address is changed
+          - next_available_address is not failed
+          - address_info.objects | length == 1
+          - address_info.objects[0].id == next_available_address.id
+
+    - name: Create a Next Available Address in Range
+      infoblox.bloxone.ipam_address:
+        next_available_id: "{{ _range.id }}"
+        space: "{{ _ip_space.id }}"
+        state: "present"
+      register: next_available_address
+    - name: Get information about the Address
+      infoblox.bloxone.ipam_address_info:
+        id: "{{ next_available_address.id }}"
+      register: address_info
+    - assert:
+        that:
+          - next_available_address is changed
+          - next_available_address is not failed
+          - address_info.objects | length == 1
+          - address_info.objects[0].id == next_available_address.id
 
     - name: Delete an Address (check mode)
       infoblox.bloxone.ipam_address:
@@ -125,7 +176,8 @@
           - address is changed
           - address is not failed
           - address_info.objects | length == 1
-          - address_info.objects[0].names[0].name == address.object.names[0].name
+          - address_info.objects[0].names[0].name == "test-1"
+          - address_info.objects[0].names[0].type == "user"
 
     - name: Create an Address with comment
       infoblox.bloxone.ipam_address:
@@ -146,7 +198,7 @@
           - address is not failed
           - address_info.objects | length == 1
           - address_info.objects[0].id == address.id
-          - address_info.objects[0].comment == address.object.comment
+          - address_info.objects[0].comment == "test comment"
 
     - name: Create an Address with hwaddr
       infoblox.bloxone.ipam_address:
@@ -167,7 +219,7 @@
           - address is not failed
           - address_info.objects | length == 1
           - address_info.objects[0].id == address.id
-          - address_info.objects[0].hwaddr == address.object.hwaddr
+          - address_info.objects[0].hwaddr == "00:11:22:33:44:55"
 
     - name: Create an Address with Interface
       infoblox.bloxone.ipam_address:
@@ -188,7 +240,7 @@
           - address is not failed
           - address_info.objects | length == 1
           - address_info.objects[0].id == address.id
-          - address_info.objects[0].interface == address.object.interface
+          - address_info.objects[0].interface == "eth0"
 
     - name: Create an Address with Tags
       infoblox.bloxone.ipam_address:

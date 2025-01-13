@@ -1,0 +1,62 @@
+---
+- module_defaults:
+    group/infoblox.bloxone.all:
+      csp_url: "{{ csp_url }}"
+      api_key: "{{ api_key }}"
+  block:
+    - name: Get Information about Next Available IP in Address Block
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _address_block.id }}"
+        count: 5
+      register: next_available_address_info
+    - assert:
+        that:
+          - next_available_address_info is not failed
+          - next_available_address_info.objects | length == 5
+
+    - name: Get Information about Next Available IP in Address Block Default Count
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _address_block.id }}"
+      register: next_available_address_info
+    - assert:
+        that:
+          - next_available_address_info is not failed
+          - next_available_address_info.objects | length == 1
+
+    - name: Get Information about Next Available IP in Subnet
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _subnet.id }}"
+        count: 5
+      register: next_available_address_info
+    - assert:
+        that:
+          - next_available_address_info is not failed
+          - next_available_address_info.objects | length == 5
+
+    - name: Get Information about Next Available IP in Subnet Default Count
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _subnet.id }}"
+      register: next_available_address_info
+    - assert:
+        that:
+          - next_available_address_info is not failed
+          - next_available_address_info.objects | length == 1
+
+    - name: Get Information about Next Available IP in Range
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _range.id }}"
+        count: 5
+      register: next_available_address_info
+    - assert:
+        that:
+          - next_available_address_info is not failed
+          - next_available_address_info.objects | length == 5
+
+    - name: Get Information about Next Available IP in Range Default Count
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _range.id }}"
+      register: next_available_address_info
+    - assert:
+        that:
+          - next_available_address_info is not failed
+          - next_available_address_info.objects | length == 1

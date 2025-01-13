@@ -9,7 +9,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r"""
 ---
-module: ipam_address
+module: ipam_next_available_ip_info
 short_description: Manage Address
 description:
     - Manage Address
@@ -18,107 +18,53 @@ author: Infoblox Inc. (@infobloxopen)
 options:
     id:
         description:
-            - ID of the object
+            - "ID of the object."
         type: str
+        required: true
+    contiguous:
+        description:
+            - "Indicates whether the IP addresses should belong to a contiguous block. Defaults to false."
+        type: bool
         required: false
-    state:
+    count:
         description:
-            - Indicate desired state of the object
-        type: str
+            - "The number of IP addresses requested. Defaults to 1."
+        type: int
         required: false
-        choices:
-            - present
-            - absent
-        default: present
-    address:
-        description:
-            - "The address in form \"a.b.c.d\"."
-        type: str
-    comment:
-        description:
-            - "The description for the address object. May contain 0 to 1024 characters. Can include UTF-8."
-        type: str
-    host:
-        description:
-            - "The resource identifier."
-        type: str
-    hwaddr:
-        description:
-            - "The hardware address associated with this IP address."
-        type: str
-    interface:
-        description:
-            - "The name of the network interface card (NIC) associated with the address, if any."
-        type: str
-    names:
-        description:
-            - "The list of all names associated with this address."
-        type: list
-        elements: dict
-        suboptions:
-            name:
-                description:
-                    - "The name expressed as a single label or FQDN."
-                type: str
-            type:
-                description:
-                    - "The origin of the name."
-                type: str
-    next_available_id:
-        description:
-            - "The resource identifier for the address block, subnet or range where the next available address should be generated."
-        type: str
-    parent:
-        description:
-            - "The resource identifier."
-        type: str
-    range:
-        description:
-            - "The resource identifier."
-        type: str
-    space:
-        description:
-            - "The resource identifier."
-        type: str
-    tags:
-        description:
-            - "The tags for this address in JSON format."
-        type: dict
+            
 
 extends_documentation_fragment:
     - infoblox.bloxone.common
 """  # noqa: E501
 
 EXAMPLES = r"""
-    - name: "Create an IP Space (required as parent)"
-      infoblox.bloxone.ipam_ip_space:
-        name: "example-ipspace"
-        state: "present"
-      register: ip_space
+    - name: Get Information about Next Available IP in Address Block
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _address_block.id }}"
+        count: 5
 
-    - name: "Create a Subnet (required as parent)"
-      infoblox.bloxone.ipam_subnet:
-        address: "10.0.0.0/16"
-        space: "{{ ip_space.id }}"
-        state: "present"
-      register: subnet
+    - name: Get Information about Next Available IP in Address Block Default Count
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _address_block.id }}"
 
-    - name: Create an Address
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.3"
-        space: "{{ ip_space.id }}"
-        tags:
-            "location": "site 1"
-        state: "present"
-      register: address
+    - name: Get Information about Next Available IP in Subnet
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _subnet.id }}"
+        count: 5
 
-    - name: Delete an Address
-      infoblox.bloxone.ipam_address:
-        address: "10.0.0.3"
-        space: "{{ ip_space.id }}"
-        state: "absent"
-      register: address
-
+    - name: Get Information about Next Available IP in Subnet Default Count
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _subnet.id }}"
+        
+    - name: Get Information about Next Available IP in Range
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _range.id }}"
+        count: 5
+        
+    - name: Get Information about Next Available IP in Range Default Count
+      infoblox.bloxone.ipam_next_available_ip_info:
+        id: "{{ _range.id }}"
+   
 """  # noqa: E501
 
 RETURN = r"""
@@ -127,10 +73,11 @@ id:
         - ID of the Address object
     type: str
     returned: Always
-item:
+objects:
     description:
         - Address object
-    type: complex
+    type: list
+    elements: dict
     returned: Always
     contains:
         address:
@@ -242,6 +189,11 @@ item:
                 - "The discovery metadata for this address in JSON format."
             type: dict
             returned: Always
+        external_keys:
+            description:
+                - "The external keys (source key) for this address in JSON format."
+            type: dict
+            returned: Always
         host:
             description:
                 - "The resource identifier."
@@ -324,165 +276,80 @@ item:
 from ansible_collections.infoblox.bloxone.plugins.module_utils.modules import BloxoneAnsibleModule
 
 try:
-    from bloxone_client import ApiException, NotFoundException
-    from ipam import Address, AddressApi
+    from bloxone_client import ApiException
+    from ipam import AddressBlockApi, RangeApi, SubnetApi
 except ImportError:
     pass  # Handled by BloxoneAnsibleModule
 
 
-class AddressModule(BloxoneAnsibleModule):
+class NextAvailableIPInfoModule(BloxoneAnsibleModule):
     def __init__(self, *args, **kwargs):
-        super(AddressModule, self).__init__(*args, **kwargs)
-        self.next_available_id = self.params.get("next_available_id")
-
-        exclude = ["state", "csp_url", "api_key", "id", "next_available_id"]
-        self._payload_params = {k: v for k, v in self.params.items() if v is not None and k not in exclude}
-        self._payload = Address.from_dict(self._payload_params)
+        super(NextAvailableIPInfoModule, self).__init__(*args, **kwargs)
         self._existing = None
-
-    @property
-    def existing(self):
-        return self._existing
-
-    @existing.setter
-    def existing(self, value):
-        self._existing = value
-
-    @property
-    def payload_params(self):
-        return self._payload_params
-
-    @property
-    def payload(self):
-        return self._payload
-
-    def payload_changed(self):
-        if self.existing is None:
-            # if existing is None, then it is a create operation
-            return True
-
-        return self.is_changed(self.existing.model_dump(by_alias=True, exclude_none=True), self.payload_params)
+        self._limit = 1000
 
     def find(self):
-        if self.params["id"] is not None:
+
+        all_results = []
+        offset = 0
+
+        while True:
             try:
-                resp = AddressApi(self.client).read(self.params["id"])
-                return resp.result
-            except NotFoundException as e:
-                if self.params["state"] == "absent":
-                    return None
-                raise e
-        else:
-            if self.params["address"] is None:
-                return None
-            filter = f"address=='{self.params['address']}' and space=='{self.params['space']}'"
-            resp = AddressApi(self.client).list(filter=filter)
-            if len(resp.results) == 1:
-                return resp.results[0]
-            if len(resp.results) > 1:
-                self.fail_json(msg=f"Found multiple Address: {resp.results}")
-            if len(resp.results) == 0:
-                return None
+                id = self.params["id"]
+                address_str = id.rsplit("/", 1)[0]
+                if address_str == "ipam/address_block":
+                    resp = AddressBlockApi(self.client).list_next_available_ip(
+                        id=id, contiguous=self.params["contiguous"], count=self.params["count"]
+                    )
+                elif address_str == "ipam/subnet":
+                    resp = SubnetApi(self.client).list_next_available_ip(
+                        id=id, contiguous=self.params["contiguous"], count=self.params["count"]
+                    )
 
-    def create(self):
-        if self.check_mode:
-            return None
+                elif address_str == "ipam/range":
+                    resp = RangeApi(self.client).list_next_available_ip(
+                        id=id, contiguous=self.params["contiguous"], count=self.params["count"]
+                    )
 
-        if self.next_available_id is not None:
-            naId = f"{self.next_available_id}/nextavailableip"
-            self._payload.address = naId
+                all_results.extend(resp.results)
 
-        resp = AddressApi(self.client).create(body=self.payload)
-        return resp.result.model_dump(by_alias=True, exclude_none=True)
+                if len(resp.results) < self._limit:
+                    break
+                offset += self._limit
 
-    def update(self):
-        if self.check_mode:
-            return None
+            except ApiException as e:
+                self.fail_json(msg=f"Failed to execute command: {e.status} {e.reason} {e.body}")
 
-        update_body = self.payload
-        update_body = self.validate_readonly_on_update(self.existing, update_body, ["space"])
-
-        resp = AddressApi(self.client).update(id=self.existing.id, body=self.payload)
-        return resp.result.model_dump(by_alias=True, exclude_none=True)
-
-    def delete(self):
-        if self.check_mode:
-            return
-
-        AddressApi(self.client).delete(self.existing.id)
+        return all_results
 
     def run_command(self):
-        result = dict(changed=False, object={}, id=None)
+        result = dict(objects=[])
 
-        # based on the state that is passed in, we will execute the appropriate
-        # functions
-        try:
-            self.existing = self.find()
-            item = {}
-            if self.params["state"] == "present" and self.existing is None:
-                item = self.create()
-                result["changed"] = True
-                result["msg"] = "Address created"
-            elif self.params["state"] == "present" and self.existing is not None:
-                if self.payload_changed():
-                    item = self.update()
-                    result["changed"] = True
-                    result["msg"] = "Address updated"
-            elif self.params["state"] == "absent" and self.existing is not None:
-                self.delete()
-                result["changed"] = True
-                result["msg"] = "Address deleted"
+        if self.check_mode:
+            self.exit_json(**result)
 
-            if self.check_mode:
-                # if in check mode, do not update the result or the diff, just return the changed state
-                self.exit_json(**result)
+        find_results = self.find()
 
-            result["diff"] = dict(
-                before=self.existing.model_dump(by_alias=True, exclude_none=True) if self.existing is not None else {},
-                after=item,
-            )
-            result["object"] = item
-            result["id"] = (
-                self.existing.id if self.existing is not None else item["id"] if (item and "id" in item) else None
-            )
-        except ApiException as e:
-            self.fail_json(msg=f"Failed to execute command: {e.status} {e.reason} {e.body}")
+        all_results = []
+        for r in find_results:
+            all_results.append(r.model_dump(by_alias=True, exclude_none=True))
 
+        result["objects"] = all_results
         self.exit_json(**result)
 
 
 def main():
+    # define available arguments/parameters a user can pass to the module
     module_args = dict(
-        id=dict(type="str", required=False),
-        state=dict(type="str", required=False, choices=["present", "absent"], default="present"),
-        address=dict(type="str", required=False),
-        next_available_id=dict(type="str", required=False),
-        comment=dict(type="str"),
-        host=dict(type="str"),
-        hwaddr=dict(type="str"),
-        interface=dict(type="str"),
-        names=dict(
-            type="list",
-            elements="dict",
-            options=dict(
-                name=dict(type="str"),
-                type=dict(type="str"),
-            ),
-        ),
-        parent=dict(type="str"),
-        range=dict(type="str"),
-        space=dict(type="str"),
-        tags=dict(type="dict"),
+        id=dict(type="str", required=True),
+        contiguous=dict(type="bool", required=False),
+        count=dict(type="int", required=False),
     )
 
-    module = AddressModule(
+    module = NextAvailableIPInfoModule(
         argument_spec=module_args,
         supports_check_mode=True,
-        mutually_exclusive=[["address", "next_available_id"]],
-        required_if=[("state", "present", ["space"])],
-        required_one_of=[["address", "next_available_id"]],
     )
-
     module.run_command()
 
 
