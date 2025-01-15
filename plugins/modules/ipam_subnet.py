@@ -7,7 +7,6 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
-
 DOCUMENTATION = r"""
 ---
 module: ipam_subnet
@@ -808,15 +807,14 @@ EXAMPLES = r"""
                     action: inherit
                 lease_time_v6:
                     action: inherit
-                    
+
     - name: "Create a Next available Subnet"
       infoblox.bloxone.ipam_subnet:
         cidr: 24
         next_available_id: "{{ address_block.id }}"
         space: "{{ ip_space.id }}"
         state: "present"
-      register: next_available_subnet
-      
+
     - name: "Delete a subnet"
       infoblox.bloxone.ipam_subnet:
         address: "10.0.0.0"
