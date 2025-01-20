@@ -327,7 +327,18 @@ item:
             returned: Always
         usage:
             description:
-                - "The usage is a combination of indicators, each tracking a specific associated use. Listed below are usage indicators with their meaning: usage indicator | description ———————- | ——————————– IPAM | Address was created by the IPAM component. IPAM, RESERVED | Address was created by the API call ipam/address or ipam/host. IPAM, NETWORK | Address was automatically created by the IPAM component and is the network address of the parent subnet. IPAM, BROADCAST | Address was automatically created by the IPAM component and is the broadcast address of the parent subnet. DHCP | Address was created by the DHCP component. DHCP, FIXEDADDRESS | Address was created by the API call dhcp/fixed_address. DHCP, LEASED | An active lease for that address was issued by a DHCP server. DHCP, DISABLED | Address is disabled. DNS | Address is used by one or more DNS records. DISCOVERED | Address is discovered by some network discovery probe like Network Insight or NetMRI in NIOS."
+                - "The usage is a combination of indicators, each tracking a specific associated use. Listed below are usage indicators with their meaning:"
+                - "Below are listed some usage indicators with their descriptions :"
+                - " I(IPAM) - Address was created by the IPAM component."
+                - " I(IPAM), I(RESERVED) - Address was created by the API call I(ipam/address) or I(ipam/host)."
+                - " I(IPAM), I(NETWORK) - Address was automatically created by the IPAM component and is the network address of the parent subnet."
+                - " I(IPAM), I(BROADCAST) - Address was automatically created by the IPAM component and is the broadcast address of the parent subnet."
+                - " I(DHCP) - Address was created by the DHCP component."
+                - " I(DHCP), I(FIXEDADDRESS) - Address was created by the API call I(dhcp/fixed_address)."
+                - " I(DHCP), I(LEASED) - An active lease for that address was issued by a DHCP server."
+                - " I(DHCP), I(DISABLED) - Address is disabled."
+                - " I(DNS) - Address is used by one or more DNS records."
+                - " I(DISCOVERED) - Address is discovered by some network discovery probe like Network Insight or NetMRI in NIOS."
             type: list
             returned: Always
 """  # noqa: E501

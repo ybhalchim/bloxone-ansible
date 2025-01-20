@@ -109,7 +109,7 @@
           - address is not changed
           - address is not failed
 
-    - name: Create an Address with Name
+    - name: Create an Address with Names
       infoblox.bloxone.ipam_address:
         address: "10.0.0.3"
         names:
